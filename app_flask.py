@@ -1,11 +1,16 @@
 import asyncio
 import aiosqlite
 import json
+import requests
 
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from time import time
 from jinja2 import Environment, select_autoescape
+
+from app_tg import bot
+
+loop: asyncio.AbstractEventLoop = None
 
 app = Flask(__name__)
 
@@ -20,68 +25,58 @@ async def get_db():
     db = await aiosqlite.connect('tickets.db')
     return db
 
-async def create_db():
-    db = await get_db()
-    cursor = await db.cursor()
+def send_message(chat_id, text):
+    token = '6632415791:AAGT7Ig3YyGdcabau4eTaXaMaLBm-w7XoBw'
+    url = f'https://api.telegram.org/bot{token}/sendMessage'
+    payload = {'chat_id': chat_id, 'text': text}
+    response = requests.post(url, data=payload)
+    return response
 
-    await cursor.execute(
-        '''
-        CREATE TABLE IF NOT EXISTS Tickets
-        (
-            id INTEGER PRIMARY KEY, 
-            user_id INTEGER,
-            user_nickname TEXT,
-            user_name TEXT,
-            status TEXT,
-            chat_history TEXT
-        )
-        '''
-    )
-
-    await db.commit()
-
-@app.route('/tickets', methods=['GET'])
+@app.route('/tickets')
 async def tickets():
-    # Получение списка тикетов
     db = await get_db()
     cursor = await db.cursor()
-    await cursor.execute("SELECT * FROM Tickets")
+    await cursor.execute("SELECT * FROM Tickets ORDER BY status DESC")
     tickets = await cursor.fetchall()
     return render_template('tickets.html', tickets=tickets)
+
+@app.route('/tickets_data', methods=['GET'])
+async def tickets_data():
+    db = await get_db()
+    cursor = await db.cursor()
+    await cursor.execute("SELECT * FROM Tickets ORDER BY status DESC")
+    tickets = await cursor.fetchall()
+    return jsonify(tickets)
 
 @app.route('/tickets/<int:id>', methods=['GET', 'POST'])
 async def ticket(id):
     db = await get_db()
     cursor = await db.cursor()
 
-    await cursor.execute("SELECT * FROM Tickets")
+    await cursor.execute("SELECT * FROM Tickets ORDER BY status DESC")
     tickets = await cursor.fetchall()
 
-    if request.method == 'POST':
-        # Добавление нового сообщения в историю чата
-        new_message = request.form['message']
-        await cursor.execute("SELECT chat_history FROM Tickets WHERE id = ?", (id,))
-        chat_history = json.loads((await cursor.fetchone())[0])
-        chat_history.append((new_message, int(time()), 'Вы'))  # 'User' is a placeholder for the sender's nickname
-        await cursor.execute("UPDATE Tickets SET chat_history = ? WHERE id = ?", (json.dumps(chat_history), id))
-        await db.commit()
-        return redirect(url_for('ticket', id=id))  # Redirect after POST
-
-    # Получение информации о тикете и истории чата
     await cursor.execute("SELECT * FROM Tickets WHERE id = ?", (id,))
     ticket = await cursor.fetchone()
     chat_history = json.loads(ticket[5])
     return render_template('ticket.html', ticket=ticket, chat_history=chat_history, tickets=tickets)
 
 @app.route('/tickets/send_message', methods=['POST'])
-async def send_message():
+async def send_message1():
+    nickname = request.form['nickname']
     message = request.form['message']
     id = request.form['id']
     db = await get_db()
     cursor = await db.cursor()
-    await cursor.execute("SELECT chat_history FROM Tickets WHERE id = ?", (id,))
-    chat_history = json.loads((await cursor.fetchone())[0])
-    chat_history.append((message, int(time()), 'Вы'))  # 'User' is a placeholder for the sender's nickname
+    await cursor.execute("SELECT * FROM Tickets WHERE id = ?", (id,))
+    data = await cursor.fetchone()
+    chat_history = json.loads(data[5])
+
+    text = f'Ответ от: {nickname}\n\n{message}'
+
+    send_message(data[1], text)
+
+    chat_history.append((message, int(time()), nickname)) 
     await cursor.execute("UPDATE Tickets SET chat_history = ? WHERE id = ?", (json.dumps(chat_history), id))
     await db.commit()
     return jsonify({'status': 'success'})
@@ -94,7 +89,22 @@ async def get_chat(id):
     chat_history = json.loads((await cursor.fetchone())[0])
     return jsonify(chat_history)
 
+@app.route('/toggle_ticket', methods=['POST'])
+async def toggle_ticket():
+    id = request.form['id']
+    db = await get_db()
+    cursor = await db.cursor()
+    await cursor.execute("SELECT * FROM Tickets WHERE id = ?", (id,))
+    data = await cursor.fetchone()
+    status = data[4]
+    new_status = 'open' if status == 'closed' else 'closed'
+    if new_status == 'closed':
+        send_message(data[1], f'Тикет с темой "{data[6]}" был закрыт администратором')
+    elif new_status == 'open':
+        send_message(data[1], f'Тикет с темой "{data[6]}" был открыт администратором')
+    await cursor.execute("UPDATE Tickets SET status = ? WHERE id = ?", (new_status, id))
+    await db.commit()
+    return jsonify({'status': new_status})
 
-if __name__ == '__main__':
-    asyncio.run(create_db())
-    app.run(debug=True)
+def run():
+    app.run()

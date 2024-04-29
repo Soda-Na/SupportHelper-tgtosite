@@ -14,18 +14,20 @@
             position: fixed;
             width: 100%;
             top: 0;
-            z-index: 1; /* Keep the header above the chat but below the sidebar */
+            z-index: 1; 
         }
         #sidebar {
             position: fixed;
-            width: 200px; /* Adjust as needed */
+            width: 200px;
             height: 100%;
             background-color: #f8f9fa;
             padding: 10px;
             box-sizing: border-box;
             overflow-y: auto;
-            top: 0; /* Align the sidebar with the top of the page */
-            z-index: 2; /* Added to keep the sidebar above the header */
+            top: 0; 
+            z-index: 2; 
+            resize: horizontal;
+            overflow: auto;
         }
         #sidebar .tickets {
             display: flex;
@@ -39,9 +41,9 @@
             box-sizing: border-box;
         }
         #chat {
-            margin-left: 210px; /* Adjust as needed */
-            margin-top: 100px; /* Increased to avoid overlap with the fixed header */
-            padding-bottom: 60px; /* Increased to avoid overlap with the message form */
+            margin-left: 210px;
+            margin-top: 120px; 
+            padding-bottom: 60px; 
             display: flex;
             flex-direction: column;
             align-items: flex-start;
@@ -51,46 +53,63 @@
             border-radius: 10px;
             padding: 5px;
             margin: 10px;
-            display: inline-block; /* To make the width fit the content */
-            min-width: 200px; /* Minimum width */
-            position: relative; /* Added to position the timestamp */
+            display: inline-block;
+            min-width: 200px; 
+            position: relative; 
+        }
+        .message.you {
+            background-color: lightblue;
         }
         .message .timestamp {
             position: absolute;
-            bottom: -10px; /* Increased to avoid sticking to the border */
-            right: 5px; /* Added to avoid sticking to the border */
-            color: #aaa; /* Make the timestamp color lighter */
-            font-size: 0.8em; /* Make the timestamp text smaller */
+            bottom: -10px; 
+            right: 5px; 
+            color: #aaa;
+            font-size: 0.8em; 
         }
         #message-form {
             position: fixed;
             bottom: 0;
-            width: calc(100% - 410px); /* Adjust as needed */
+            width: calc(100% - 410px); 
             background-color: #f8f9fa;
             padding: 10px;
             box-sizing: border-box;
-            left: 210px; /* Added to avoid overlap with the sidebar */
+            left: 210px; 
+        }
+        .ticket.closed {
+            background-color: rgb(238, 96, 96);
+        }
+
+        #resize-handle {
+            position: absolute;
+            right: 0;
+            width: 10px;
+            height: 100%;
+            cursor: col-resize;
         }
     </style>
 </head>
 <body>
+    <audio id="messageSound" src="/static/message_sound.mp3" preload="auto"></audio>
     <div id="header">
-        <h1>{{ ticket[3] }}'s Chat (ID: {{ ticket[1] }}, Nickname: {{ ticket[2] }}, Status: {{ ticket[4] }})</h1>
+        <h1>Name: {{ ticket[3] }}, Username: {{ ticket[2] }}, Theme {{ ticket[6] }}</h1>
+        <button id="toggle-ticket" data-status="{{ ticket[4] }}">Toggle Ticket</button>
     </div>
     <div id="sidebar">
         <h2>Tickets</h2>
         <div class="tickets">
-            {% for ticket in tickets %}
-            <div class="ticket">
+            {% for ticket in tickets|sort(attribute='status') %}
+            <div class="ticket {% if ticket[4] == 'closed' %}closed{% endif %}">
                 <a href="{{ url_for('ticket', id=ticket[0]) }}">
-                    <p>User ID: {{ ticket[1] }}</p>
-                    <p>Nickname: {{ ticket[2] }}</p>
+                    <p>Username: {{ ticket[2] }}</p>
                     <p>Name: {{ ticket[3] }}</p>
+                    <p>Theme: {{ ticket[6] }}</p>
                     <p>Status: {{ ticket[4] }}</p>
                 </a>
             </div>
             {% endfor %}
         </div>
+        <div id="resize-handle"></div>
     </div>
     <div id="chat">
         {% for message, timestamp, sender in chat_history %}
@@ -103,8 +122,17 @@
     </div>
     <form id="message-form" method="POST">
         <input type="hidden" name="id" value="{{ ticket[0] }}">
-        <input type="text" name="message" required style="width: 90%;">
-        <input type="submit" value="Send" style="width: 9%;">
+        <div style="display: flex; justify-content: space-between;">
+            <div style="width: 20%;">
+                <input type="text" name="nickname" required placeholder="Enter your nickname" style="width: 100%;">
+            </div>
+            <div style="width: 70%;">
+                <input type="text" name="message" required placeholder="Enter your message" style="width: 100%;">
+            </div>
+            <div style="width: 9%;">
+                <input type="submit" value="Send" style="width: 100%;" {% if ticket[4] == 'closed' %}disabled{% endif %}>
+            </div>
+        </div>
     </form>
 </body>
 </html>
@@ -117,19 +145,28 @@
             if (this.status == 200) {
                 var chat = JSON.parse(this.responseText);
                 var chatDiv = document.getElementById('chat');
-                chatDiv.innerHTML = '';
-                for (var i = 0; i < chat.length; i++) {
+                var oldChatLength = chatDiv.children.length; 
+                chatDiv.innerHTML = ''; 
+                for (var i = 0; i < chat.length; i++) { 
                     var messageDiv = document.createElement('div');
                     messageDiv.className = 'message';
+                    if (chat[i][2] === 'Вы') {
+                        messageDiv.classList.add('you');
+                    }
                     messageDiv.innerHTML = '<p><strong>' + chat[i][2] + '</strong></p>' +
                                            '<p>' + chat[i][0] + '</p>' +
                                            '<p class="timestamp">' + new Date(chat[i][1] * 1000).toLocaleString() + '</p>';
                     chatDiv.appendChild(messageDiv);
                 }
-                // Check if the user is at the bottom of the page
-                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 10) {
-                    // Scroll to the bottom of the page
-                    window.scrollTo(0, document.body.scrollHeight);
+                if (chat.length > oldChatLength) {
+                    var messageSound = document.getElementById('messageSound');
+                    messageSound.play(); 
+                }
+                if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 500) {
+                    window.scrollTo({
+                        top: document.documentElement.scrollHeight,
+                        behavior: 'smooth'
+                    });
                 }
             }
         };
@@ -138,33 +175,145 @@
     
     document.getElementById('message-form').addEventListener('submit', function(event) {
         event.preventDefault();
-        var message = document.querySelector('#message-form input[type="text"]').value;
+        var nicknameInput = document.querySelector('#message-form input[name="nickname"]');
+        var nickname = nicknameInput.value;
+        if (nicknameInput.style.display !== 'none') {
+            setCookie('nickname', nickname, 365); 
+        }
+        event.preventDefault();
+        var nickname = document.querySelector('#message-form input[name="nickname"]').value;
+        setCookie('nickname', nickname, 365);
+
+        event.preventDefault();
+        var nickname = document.querySelector('#message-form input[name="nickname"]').value;
+        var message = document.querySelector('#message-form input[name="message"]').value;
         var id = document.querySelector('#message-form input[name="id"]').value;
         var xhr = new XMLHttpRequest();
         xhr.open('POST', 'send_message', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         xhr.onload = function() {
             if (this.status == 200 && JSON.parse(this.responseText).status == 'success') {
-                // Clear the message input field
-                document.querySelector('#message-form input[type="text"]').value = '';
+                document.querySelector('#message-form input[name="message"]').value = '';
                 updateChat();
-                // Smoothly scroll to the bottom of the page after a short delay
-                setTimeout(function() {
-                    window.scrollTo({
-                        top: document.body.scrollHeight,
-                        behavior: 'smooth'
-                    });
-                }, 100);
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
             }
         };
-        xhr.send('message=' + encodeURIComponent(message) + '&id=' + encodeURIComponent(id));
-        setTimeout(function() {
-            document.querySelector('#message-form input[type="text"]').focus();
-        }, 0);
+        xhr.send('nickname=' + encodeURIComponent(nickname) + '&message=' + encodeURIComponent(message) + '&id=' + encodeURIComponent(id));
+        document.querySelector('#message-form input[name="message"]').focus();
     });
     
+    document.getElementById('toggle-ticket').addEventListener('click', function() {
+        var id = document.querySelector('#message-form input[name="id"]').value;
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/toggle_ticket', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function() {
+            if (this.status == 200) {
+                var status = JSON.parse(this.responseText).status;
+                var button = document.getElementById('toggle-ticket');
+                button.textContent = status === 'open' ? 'Close Ticket' : 'Open Ticket';
+                var inputs = document.querySelectorAll('#message-form input');
+                for (var i = 0; i < inputs.length; i++) {
+                    inputs[i].disabled = status === 'closed';
+                }
+            }
+        };
+        xhr.send('id=' + encodeURIComponent(id));
+    });
+
+    function updateTickets() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/tickets_data', true);
+        xhr.onload = function() {
+            if (this.status == 200) {
+                var tickets = JSON.parse(this.responseText);
+                var ticketsDiv = document.querySelector('#sidebar .tickets');
+                var oldTicketsLength = ticketsDiv.children.length; 
+                ticketsDiv.innerHTML = '';
+                for (var i = 0; i < tickets.length; i++) {
+                    var ticketDiv = document.createElement('div');
+                    ticketDiv.className = 'ticket';
+                    if (tickets[i][4] === 'closed') {
+                        ticketDiv.classList.add('closed');
+                    }
+                    ticketDiv.innerHTML = '<a href="' + tickets[i][0] + '">' +
+                                        '<p>Username: ' + tickets[i][2] + '</p>' +
+                                        '<p>Name: ' + tickets[i][3] + '</p>' +
+                                        '<p>Theme: ' + tickets[i][6] + '</p>' +
+                                        '<p>Status: ' + tickets[i][4] + '</p>' +
+                                        '</a>';
+                    ticketsDiv.appendChild(ticketDiv);
+                }
+                if (tickets.length > oldTicketsLength) { 
+                    var ticketSound = document.getElementById('messageSound');
+                    ticketSound.play(); 
+                }
+            }
+        };
+        xhr.send();
+    }
+
+
+    function getCookie(name) {
+        var nameEQ = name + "=";
+        var ca = document.cookie.split(';');
+        for(var i=0;i < ca.length;i++) {
+            var c = ca[i];
+            while (c.charAt(0)==' ') c = c.substring(1,c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+        }
+        return null;
+    }
+    function setCookie(name, value, days) {
+        var expires = "";
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime() + (days*24*60*60*1000));
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+    }
+
+    var sidebar = document.getElementById('sidebar');
+    var resizeHandle = document.getElementById('resize-handle');
+
+    resizeHandle.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        sidebar.style.userSelect = 'none';
+        document.addEventListener('mousemove', resize);
+        document.addEventListener('mouseup', stopResize);
+    });
+
+    function resize(e) {
+        sidebar.style.width = e.pageX + 'px';
+    }
+
+    function stopResize() {
+        sidebar.style.userSelect = '';
+        document.removeEventListener('mousemove', resize);
+        document.removeEventListener('mouseup', stopResize);
+    }
     window.onload = function() {
+        var nickname = getCookie('nickname');
+        var nicknameInput = document.querySelector('#message-form input[name="nickname"]');
+        var messageInput = document.querySelector('#message-form input[name="message"]');
+        if (nickname) {
+            nicknameInput.value = nickname;
+            nicknameInput.style.display = 'none'; 
+            messageInput.style.marginLeft = '-100px'; 
+        }
+        if (nickname) {
+            document.querySelector('#message-form input[name="nickname"]').value = nickname;
+        }
+        var button = document.getElementById('toggle-ticket');
+        var status = button.getAttribute('data-status');
+        button.textContent = status === 'open' ? 'Close Ticket' : 'Open Ticket';
+        updateChat();
         window.scrollTo(0, document.body.scrollHeight);
-        setInterval(updateChat, 5000); // Update chat every 5 seconds
+        setInterval(updateChat, 5000); 
+        setInterval(updateTickets, 5000);
     };
 </script>

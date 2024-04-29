@@ -12,6 +12,9 @@
             box-sizing: border-box;
             max-width: 250px;
         }
+        .ticket.closed {
+            background-color: rgb(238, 96, 96);
+        }
         .tickets {
             display: flex;
             flex-wrap: wrap; 
@@ -21,11 +24,11 @@
 <body>
     <div class="tickets">
         {% for ticket in tickets %}
-        <div class="ticket">
+        <div class="ticket {% if ticket[4] == 'closed' %}closed{% endif %}">
             <a href="{{ url_for('ticket', id=ticket[0]) }}">
-                <p>User ID: {{ ticket[1] }}</p>
-                <p>Nickname: {{ ticket[2] }}</p>
+                <p>Username: {{ ticket[2] }}</p>
                 <p>Name: {{ ticket[3] }}</p>
+                <p>Theme: {{ ticket[6] }}</p>
                 <p>Status: {{ ticket[4] }}</p>
             </a>
         </div>
