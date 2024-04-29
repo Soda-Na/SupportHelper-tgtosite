@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ticket {{ ticket[0] }}</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+        #header {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1; /* Keep the header above the chat but below the sidebar */
+        }
+        #sidebar {
+            position: fixed;
+            width: 200px; /* Adjust as needed */
+            height: 100%;
+            background-color: #f8f9fa;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            top: 0; /* Align the sidebar with the top of the page */
+            z-index: 2; /* Added to keep the sidebar above the header */
+        }
+        #sidebar .tickets {
+            display: flex;
+            flex-direction: column;
+        }
+        #sidebar .ticket {
+            border: 1px solid #000;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px;
+            box-sizing: border-box;
+        }
+        #chat {
+            margin-left: 210px; /* Adjust as needed */
+            margin-top: 100px; /* Increased to avoid overlap with the fixed header */
+            padding-bottom: 60px; /* Increased to avoid overlap with the message form */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .message {
+            border: 1px solid #000;
+            border-radius: 10px;
+            padding: 5px;
+            margin: 10px;
+            display: inline-block; /* To make the width fit the content */
+            min-width: 200px; /* Minimum width */
+            position: relative; /* Added to position the timestamp */
+        }
+        .message .timestamp {
+            position: absolute;
+            bottom: -10px; /* Increased to avoid sticking to the border */
+            right: 5px; /* Added to avoid sticking to the border */
+            color: #aaa; /* Make the timestamp color lighter */
+            font-size: 0.8em; /* Make the timestamp text smaller */
+        }
+        #message-form {
+            position: fixed;
+            bottom: 0;
+            width: calc(100% - 410px); /* Adjust as needed */
+            background-color: #f8f9fa;
+            padding: 10px;
+            box-sizing: border-box;
+            left: 210px; /* Added to avoid overlap with the sidebar */
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>{{ ticket[3] }}'s Chat (ID: {{ ticket[1] }}, Nickname: {{ ticket[2] }}, Status: {{ ticket[4] }})</h1>
+    </div>
+    <div id="sidebar">
+        <h2>Tickets</h2>
+        <div class="tickets">
+            {% for ticket in tickets %}
+            <div class="ticket">
+                <a href="{{ url_for('ticket', id=ticket[0]) }}">
+                    <p>User ID: {{ ticket[1] }}</p>
+                    <p>Nickname: {{ ticket[2] }}</p>
+                    <p>Name: {{ ticket[3] }}</p>
+                    <p>Status: {{ ticket[4] }}</p>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div id="chat">
+        {% for message, timestamp, sender in chat_history %}
+        <div class="message">
+            <p><strong>{{ sender }}</strong></p>
+            <p>{{ message }}</p>
+            <p class="timestamp">{{ timestamp|timestamp_to_datetime }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    <form id="message-form" method="POST">
+        <input type="hidden" name="id" value="{{ ticket[0] }}">
+        <input type="text" name="message" required style="width: 90%;">
+        <input type="submit" value="Send" style="width: 9%;">
+    </form>
+</body>
+</html>
+<script>
+    function updateChat() {
+        var id = document.querySelector('#message-form input[name="id"]').value;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', encodeURIComponent(id) + '/chat', true);
+        xhr.onload = function() {
+            if (this.status == 200) {
+                var chat = JSON.parse(this.responseText);
+                var chatDiv = document.getElementById('chat');
+                chatDiv.innerHTML = '';
+                for (var i = 0; i < chat.length; i++) {
+                    var messageDiv = document.createElement('div');
+                    messageDiv.className = 'message';
+                    messageDiv.innerHTML = '<p><strong>' + chat[i][2] + '</strong></p>' +
+                                           '<p>' + chat[i][0] + '</p>' +
+                                           '<p class="timestamp">' + new Date(chat[i][1] * 1000).toLocaleString() + '</p>';
+                    chatDiv.appendChild(messageDiv);
+                }
+                // Check if the user is at the bottom of the page
+                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 10) {
+                    // Scroll to the bottom of the page
+                    window.scrollTo(0, document.body.scrollHeight);
+                }
+            }
+        };
+        xhr.send();
+    }
+    
+    document.getElementById('message-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        var message = document.querySelector('#message-form input[type="text"]').value;
+        var id = document.querySelector('#message-form input[name="id"]').value;
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'send_message', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function() {
+            if (this.status == 200 && JSON.parse(this.responseText).status == 'success') {
+                // Clear the message input field
+                document.querySelector('#message-form input[type="text"]').value = '';
+                updateChat();
+                // Smoothly scroll to the bottom of the page after a short delay
+                setTimeout(function() {
+                    window.scrollTo({
+                        top: document.body.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }, 100);
+            }
+        };
+        xhr.send('message=' + encodeURIComponent(message) + '&id=' + encodeURIComponent(id));
+        setTimeout(function() {
+            document.querySelector('#message-form input[type="text"]').focus();
+        }, 0);
+    });
+    
+    window.onload = function() {
+        window.scrollTo(0, document.body.scrollHeight);
+        setInterval(updateChat, 5000); // Update chat every 5 seconds
+    };
+</script>

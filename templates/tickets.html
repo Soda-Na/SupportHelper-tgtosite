@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tickets</title>
+    <style>
+        .ticket {
+            border: 1px solid #000;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px;
+            flex: 1 0 21%; 
+            box-sizing: border-box;
+            max-width: 250px;
+        }
+        .tickets {
+            display: flex;
+            flex-wrap: wrap; 
+        }
+    </style>
+</head>
+<body>
+    <div class="tickets">
+        {% for ticket in tickets %}
+        <div class="ticket">
+            <a href="{{ url_for('ticket', id=ticket[0]) }}">
+                <p>User ID: {{ ticket[1] }}</p>
+                <p>Nickname: {{ ticket[2] }}</p>
+                <p>Name: {{ ticket[3] }}</p>
+                <p>Status: {{ ticket[4] }}</p>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
