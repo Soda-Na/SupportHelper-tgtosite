@@ -106,5 +106,13 @@ async def toggle_ticket():
     await db.commit()
     return jsonify({'status': new_status})
 
+@app.route('/images/<id>', methods=['GET'])
+async def images(id):
+    db = await get_db()
+    cursor = await db.cursor()
+    await cursor.execute("SELECT * FROM Photos WHERE fileid = ?", (id,))
+    data = await cursor.fetchone()
+    return data[1]
+
 def run():
     app.run()

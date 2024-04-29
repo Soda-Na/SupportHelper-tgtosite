@@ -153,10 +153,32 @@
                     if (chat[i][2] === 'Вы') {
                         messageDiv.classList.add('you');
                     }
-                    messageDiv.innerHTML = '<p><strong>' + chat[i][2] + '</strong></p>' +
-                                           '<p>' + chat[i][0] + '</p>' +
-                                           '<p class="timestamp">' + new Date(chat[i][1] * 1000).toLocaleString() + '</p>';
-                    chatDiv.appendChild(messageDiv);
+                    var messageContent = chat[i][0];
+                    if (messageContent.startsWith('file_')) {
+                        var parts = messageContent.split('_');
+                        var fileId = parts[1];
+                        var format = parts[2];
+                    
+                        fetch('/images/' + fileId)
+                            .then(response => response.blob())
+                            .then(blob => {
+                                var reader = new FileReader();
+                                reader.onloadend = function() {
+                                    var base64data = reader.result;                
+                                    var img = document.createElement('img');
+                                    img.src = base64data;
+                                    messageDiv.appendChild(img);
+                                    chatDiv.appendChild(messageDiv); // Move this line inside the callback
+                                }
+                                reader.readAsDataURL(blob);
+                            })
+                            .catch(error => console.error('Error:', error));
+                    } else {
+                        messageDiv.innerHTML = '<p><strong>' + chat[i][2] + '</strong></p>' +
+                                               '<p>' + messageContent + '</p>' +
+                                               '<p class="timestamp">' + new Date(chat[i][1] * 1000).toLocaleString() + '</p>';
+                        chatDiv.appendChild(messageDiv);
+                    }
                 }
                 if (chat.length > oldChatLength) {
                     var messageSound = document.getElementById('messageSound');

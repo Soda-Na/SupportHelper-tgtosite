@@ -1,5 +1,6 @@
 import json
 import aiosqlite
+import imghdr
 
 from time                   import time
 
@@ -9,6 +10,7 @@ from aiogram.fsm.context    import FSMContext
 from aiogram.filters.state  import State, StatesGroup
 from aiogram.enums          import ParseMode
 from aiogram.utils.keyboard import InlineKeyboardButton, InlineKeyboardBuilder
+from PIL                    import Image
 
 async def get_db():
     db = await aiosqlite.connect('tickets.db')
@@ -134,8 +136,8 @@ async def check_if_user_created_ticket(message: types.Message):
 
 @dp.message(check_if_user_created_ticket)
 async def check_if_user_created_ticket(message: types.Message): 
-    if message.sticker or message.photo or message.video or message.voice or not message.text:
-        await message.react([types.ReactionTypeEmoji(emoji='(👎')])
+    if message.sticker or message.video or message.voice :
+        await message.react([types.ReactionTypeEmoji(emoji='👎')])
         return
     
     db = await get_db()
@@ -145,7 +147,14 @@ async def check_if_user_created_ticket(message: types.Message):
     ticket = await cursor.fetchone()
 
     chat_history = json.loads(ticket[5])
-    chat_history.append([message.text, int(time()), message.from_user.full_name])
+    if message.photo:
+        photo_blob = await bot.download(message.photo[-1].file_id)
+        await cursor.execute('INSERT INTO Photos (data, fileid) VALUES (?, ?)', (photo_blob.read(), message.photo[-1].file_id))
+        await db.commit()
+
+        chat_history.append([f'file_{message.photo[-1].file_id}_{Image.open(photo_blob).format}', int(time()), message.from_user.full_name])
+    else:
+        chat_history.append([message.text, int(time()), message.from_user.full_name])
 
     await cursor.execute('UPDATE Tickets SET chat_history = ? WHERE id = ?', (json.dumps(chat_history), ticket[0]))
     await db.commit()

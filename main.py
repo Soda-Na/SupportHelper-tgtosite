@@ -23,6 +23,17 @@ async def create_db():
         '''
     )
 
+    await cursor.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS Photos
+        (
+            id INTEGER PRIMARY KEY,
+            data BLOB,
+            fileid TEXT
+        )
+        '''
+    )
+
     await db.commit()
 
 async def startup():
