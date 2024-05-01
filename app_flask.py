@@ -14,6 +14,8 @@ loop: asyncio.AbstractEventLoop = None
 
 app = Flask(__name__)
 
+TOKEN = json.loads(open('token.json', encoding='utf-8').read())['token']
+
 def timestamp_to_datetime(timestamp):
     timestamp = int(timestamp)
     dt = datetime.fromtimestamp(timestamp)
@@ -26,7 +28,7 @@ async def get_db():
     return db
 
 def send_message(chat_id, text):
-    token = '6632415791:AAGT7Ig3YyGdcabau4eTaXaMaLBm-w7XoBw'
+    token = TOKEN
     url = f'https://api.telegram.org/bot{token}/sendMessage'
     payload = {'chat_id': chat_id, 'text': text}
     response = requests.post(url, data=payload)

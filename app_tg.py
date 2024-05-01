@@ -16,8 +16,9 @@ async def get_db():
     db = await aiosqlite.connect('tickets.db')
     return db
 
+TOKEN = json.loads(open('token.json', encoding='utf-8').read())['token']
 
-bot = Bot(token='6632415791:AAGT7Ig3YyGdcabau4eTaXaMaLBm-w7XoBw', parse_mode=ParseMode.HTML)
+bot = Bot(token=TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher()
 
 @dp.message(CommandStart())
@@ -152,10 +153,12 @@ async def check_if_user_created_ticket(message: types.Message):
         await cursor.execute('INSERT INTO Photos (data, fileid) VALUES (?, ?)', (photo_blob.read(), message.photo[-1].file_id))
         await db.commit()
 
-        chat_history.append([f'file_{message.photo[-1].file_id}_{Image.open(photo_blob).format}', int(time()), message.from_user.full_name])
+        chat_history.append([f'file:{message.photo[-1].file_id}:{Image.open(photo_blob).format}', int(time()), message.from_user.full_name])
     else:
         chat_history.append([message.text, int(time()), message.from_user.full_name])
 
+    print(chat_history)
+    
     await cursor.execute('UPDATE Tickets SET chat_history = ? WHERE id = ?', (json.dumps(chat_history), ticket[0]))
     await db.commit()
 

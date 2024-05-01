@@ -39,7 +39,7 @@ async def create_db():
 async def startup():
     loop = asyncio.get_event_loop()
     app_flask.loop = loop
-
+    
     await create_db()
     threading.Thread(target=app_flask.run).start()
     await dp.start_polling(bot)
