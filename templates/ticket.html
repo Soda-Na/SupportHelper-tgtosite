@@ -1,153 +1,25 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ticket {{ ticket[0] }}</title>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-        }
-        #header {
-            background-color: #f8f9fa;
-            padding: 10px;
-            text-align: center;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1; 
-        }
-        #sidebar {
-            position: fixed;
-            width: 200px;
-            height: 100%;
-            background-color: #f8f9fa;
-            padding: 10px;
-            box-sizing: border-box;
-            overflow-y: auto;
-            top: 0; 
-            z-index: 2; 
-            resize: horizontal;
-            overflow: auto;
-        }
-        #sidebar .tickets {
-            display: flex;
-            flex-direction: column;
-        }
-        #sidebar .ticket {
-            border: 1px solid #000;
-            border-radius: 10px;
-            padding: 10px;
-            margin: 10px;
-            box-sizing: border-box;
-        }
-        #chat {
-            margin-left: 210px;
-            margin-top: 120px; 
-            padding-bottom: 60px; 
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        .message {
-            border: 1px solid #000;
-            border-radius: 10px;
-            padding-left: 5px;
-            padding-right: 5px;
-            padding-top: 5px;
-            padding-bottom: 14px;
-            margin: 10px;
-            display: inline-block;
-            width: 20%;
-            min-width: 300px; 
-            position: relative; 
-        }
-        .message.you {
-            background-color: lightblue;
-        }
-        .message .timestamp {
-            position: absolute;
-            bottom: -10px; 
-            right: 5px; 
-            color: #aaa;
-            font-size: 0.8em; 
-        }
-        #message-form {
-            position: fixed;
-            bottom: 0;
-            width: calc(100% - 210px); 
-            background-color: #f8f9fa;
-            padding: 10px;
-            box-sizing: border-box;
-            left: 210px; 
-        }
-        .ticket.closed {
-            background-color: rgb(238, 96, 96);
-        }
-
-        #resize-handle {
-            position: absolute;
-            right: 0;
-            width: 10px;
-            height: 100%;
-            cursor: col-resize;
-        }
-        .message img {
-            max-width: 100%;
-            height: auto;
-        }
-@media (max-aspect-ratio: 16/9) {
-    #sidebar {
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        left: -100%;
-        transition: left 0.3s;
-    }
-    #sidebar.open {
-        left: 0;
-    }
-    #chat {
-        margin-left: 0;
-        margin-top: 0;
-    }
-    #message-form {
-        width: 120%;
-        left: 0;
-    }
-    #sidebar-toggle {
-        display: block;
-    }
-    
-    .message {
-        width: 90%;
-        min-width: 0;
-        font-size: 2em;
-    }
-}
-    #sidebar-toggle {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        z-index: 3; /* Установите z-index выше, чем у остальных элементов сайдбара */
-    }
-    #sidebar-close {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 3; /* Установите z-index выше, чем у остальных элементов сайдбара */
-    }
-    </style>
+    <link rel="stylesheet" href="../static/ticket_style.css">
 </head>
 <body>
     <audio id="messageSound" src="/static/message_sound.mp3" preload="auto"></audio>
-    <div id="header">
-        <button id="sidebar-toggle">☰</button>
-        <h1>Name: {{ ticket[3] }}, Username: {{ ticket[2] }}, Theme {{ ticket[6] }}</h1>
-        <button id="toggle-ticket" data-status="{{ ticket[4] }}">Toggle Ticket</button>
-    </div>
+    <header>
+        <button id="sidebar-toggle" onclick="toggle_sidebar()">☰</button>
+        <div class="ticket-info">
+            <h1>Name: {{ ticket[3] }}, Username: {{ ticket[2] }}, Theme {{ ticket[6] }}</h1>
+            <button id="toggle-ticket" data-status="{{ ticket[4] }}">Toggle Ticket</button>
+        </div>
+    </header>
     <div id="sidebar">
-        <button id="sidebar-close">X</button>
-        <h2>Tickets</h2>
+        <div class="sidebar-info">
+            <h2>Tickets</h2>
+            <button id="sidebar-close" onclick="close_sidebar()">X</button>
+        </div>
         <div class="tickets">
             {% for ticket in tickets|sort(attribute='status') %}
             <div class="ticket {% if ticket[4] == 'closed' %}closed{% endif %}">
@@ -160,26 +32,17 @@
             </div>
             {% endfor %}
         </div>
-        <div id="resize-handle"></div>
     </div>
-    <div id="chat">
-    </div>
+    <div id="chat"></div>
     <form id="message-form" method="POST">
         <input type="hidden" name="id" value="{{ ticket[0] }}">
-        <div style="display: flex; justify-content: space-between;">
-            <div style="width: 20%;">
-                <input type="text" name="nickname" required placeholder="Enter your nickname" style="width: 100%;">
-            </div>
-            <div style="width: 70%;">
-                <input type="text" name="message" required placeholder="Enter your message" style="width: 100%;">
-            </div>
-            <div style="width: 9%;">
-                <input type="submit" value="Send" style="width: 100%;" {% if ticket[4] == 'closed' %}disabled{% endif %}>
-            </div>
-        </div>
+        <input type="text" name="nickname" required placeholder="Nickname" style="display: inline-block;">
+        <input type="text" name="message" required placeholder="Message" style="width: 100%;">
+        <input type="submit" value="←" {% if ticket[4] == 'closed' %}disabled{% endif %} style="display: inline-block;">
     </form>
 </body>
 </html>
+
 <script>
     var lastMessageTimestamp = localStorage.getItem('lastMessageTimestamp') || 0; // Get the last timestamp from localStorage
 
@@ -389,36 +252,15 @@
         document.cookie = name + "=" + (value || "")  + expires + "; path=/";
     }
 
-    var sidebar = document.getElementById('sidebar');
-    var resizeHandle = document.getElementById('resize-handle');
+    const sidebar = document.getElementById('sidebar');
 
-    resizeHandle.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        sidebar.style.userSelect = 'none';
-        document.addEventListener('mousemove', resize);
-        document.addEventListener('mouseup', stopResize);
-    });
-
-
-    function stopResize() {
-        sidebar.style.userSelect = '';
-        document.removeEventListener('mousemove', resize);
-        document.removeEventListener('mouseup', stopResize);
+    function toggle_sidebar() {
+        sidebar.style.display = 'block';
     }
 
-    document.getElementById('sidebar-toggle').addEventListener('click', function() {
-        var sidebar = document.getElementById('sidebar');
-        if (sidebar.classList.contains('open')) {
-            sidebar.classList.remove('open');
-        } else {
-            sidebar.classList.add('open');
-        }
-    });
-
-    document.getElementById('sidebar-close').addEventListener('click', function() {
-        var sidebar = document.getElementById('sidebar');
-        sidebar.classList.remove('open');
-    });
+    function close_sidebar() {
+        sidebar.style.display = "none";
+    }
 
     window.onload = async function() {
         var nickname = getCookie('nickname');
@@ -428,8 +270,6 @@
         if (nickname) {
             nicknameInput.value = nickname;
             nicknameInput.style.display = 'none'; 
-            messageInput.style.marginLeft = '-100px'; 
-            buttonMessage.style.marginLeft = '-100px';
         }
         if (nickname) {
             document.querySelector('#message-form input[name="nickname"]').value = nickname;

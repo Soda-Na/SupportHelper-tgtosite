@@ -1,0 +1,148 @@
+html {
+    box-sizing: border-box;
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
+body {
+    position: relative;
+    padding: 0;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    font-family: sans-serif;
+    width: 100%;
+    font-size: 16px;
+}
+
+h1 {
+    font-size: 32px;
+}
+
+header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    padding: 10px;
+    background-color: #f8f9fa;
+    width: 100%;
+    z-index: 3;
+
+    .ticket-info {
+        align-self: center;
+        text-align: center;
+        display: block;
+        flex-direction: column;
+    }
+
+    #sidebar-toggle {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 3;
+    }
+}
+
+#message-form {
+    position: fixed;
+    display: flex;
+    bottom: 0;
+    right: 0;
+    background-color: #f8f9fa;
+    padding: 10px;
+    width: 100%;
+}
+
+#chat {
+    margin-left: 160px;
+    padding-bottom: 60px;
+    display: flex;
+    align-self: flex-start;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.message {
+    border: 1px solid #000;
+    border-radius: 10px;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 5px;
+    padding-bottom: 14px;
+    margin: 10px;
+    display: inline-block;
+    width: 20%;
+    min-width: 300px;
+    position: relative;
+}
+
+.message.you {
+    background-color: lightblue;
+}
+
+.message .timestamp {
+    position: absolute;
+    bottom: -10px;
+    right: 5px;
+    color: #aaa;
+    font-size: 0.8em;
+}
+
+.ticket.closed {
+    background-color: rgb(238, 96, 96);
+}
+
+.message img {
+    max-width: 100%;
+    height: auto;
+}
+
+#sidebar {
+    position: fixed;
+    left: 0;
+    display: none;
+    height: 100%;
+    width: 250px;
+    z-index: 4;
+    padding: 10px;
+    background-color: #efefef;
+    overflow: auto;
+    overflow-y: auto;
+    resize: horizontal;
+    box-sizing: border-box;
+
+    .sidebar-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .tickets {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .ticket {
+        border: 1px solid #000;
+        border-radius: 10px;
+        padding: 10px;
+        margin: 10px 0;
+        background-color: #fff;
+        box-sizing: border-box;
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    #chat {
+        margin-left: 10px;
+    }
+    h1 {
+        font-size: 24px;
+    }
+}
