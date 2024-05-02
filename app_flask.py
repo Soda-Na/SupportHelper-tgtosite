@@ -117,4 +117,4 @@ async def images(id):
     return data[1]
 
 def run():
-    app.run()
+    app.run(host="0.0.0.0")
