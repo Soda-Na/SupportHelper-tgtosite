@@ -1,9 +1,11 @@
 html {
     box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 *, *:before, *:after {
     box-sizing: inherit;
+    overflow-x: inherit;
 }
 
 body {
@@ -144,6 +146,10 @@ header {
 }
 
 @media screen and (max-width: 1024px) {
+    #sidebar {
+        width: 100vw;
+        resize: none;
+    }
     #chat {
         margin-left: 10px;
         padding-bottom: 10px;
