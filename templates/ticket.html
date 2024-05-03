@@ -33,7 +33,7 @@
             {% endfor %}
         </div>
     </div>
-    <div class="wrapper">
+    <main>
         <div id="chat"></div>
         <form id="message-form" method="POST">
             <input type="hidden" name="id" value="{{ ticket[0] }}">
@@ -41,7 +41,7 @@
             <input type="text" name="message" required placeholder="Message" style="width: 100%;">
             <input type="submit" value="←" {% if ticket[4] == 'closed' %}disabled{% endif %} style="display: inline-block;">
         </form>
-    </div>
+    </main>
 </body>
 </html>
 
@@ -255,8 +255,11 @@
     }
 
     const sidebar = document.getElementById('sidebar');
-    const wrapper = document.querySelector('.wrapper');
+    const wrapper = document.querySelector('main');
     const message_form = document.getElementById('message-form')
+    const headerHeight = document.querySelector('header').offsetHeight;
+
+    document.querySelector('#chat').style.marginTop = headerHeight+20 + 'px';
 
     function toggle_sidebar() {
         sidebar.style.display = 'block';

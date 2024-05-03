@@ -26,7 +26,7 @@ h1 {
 }
 
 header {
-    position: sticky;
+    position: fixed;
     top: 0;
     display: flex;
     justify-content: center;
@@ -52,7 +52,7 @@ header {
     }
 }
 
-.wrapper {
+main {
     width: 100%;
     align-self: flex-start;
 }
