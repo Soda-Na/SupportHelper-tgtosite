@@ -50,18 +50,22 @@ header {
     }
 }
 
+.wrapper {
+    width: 100%;
+    align-self: flex-start;
+}
+
 #message-form {
     position: fixed;
     display: flex;
     bottom: 0;
-    right: 0;
+    left: 0;
     background-color: #f8f9fa;
     padding: 10px;
     width: 100%;
 }
 
 #chat {
-    margin-left: 160px;
     padding-bottom: 60px;
     display: flex;
     align-self: flex-start;

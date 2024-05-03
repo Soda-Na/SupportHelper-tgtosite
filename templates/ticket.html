@@ -33,13 +33,15 @@
             {% endfor %}
         </div>
     </div>
-    <div id="chat"></div>
-    <form id="message-form" method="POST">
-        <input type="hidden" name="id" value="{{ ticket[0] }}">
-        <input type="text" name="nickname" required placeholder="Nickname" style="display: inline-block;">
-        <input type="text" name="message" required placeholder="Message" style="width: 100%;">
-        <input type="submit" value="←" {% if ticket[4] == 'closed' %}disabled{% endif %} style="display: inline-block;">
-    </form>
+    <div class="wrapper">
+        <div id="chat"></div>
+        <form id="message-form" method="POST">
+            <input type="hidden" name="id" value="{{ ticket[0] }}">
+            <input type="text" name="nickname" required placeholder="Nickname" style="display: inline-block;">
+            <input type="text" name="message" required placeholder="Message" style="width: 100%;">
+            <input type="submit" value="←" {% if ticket[4] == 'closed' %}disabled{% endif %} style="display: inline-block;">
+        </form>
+    </div>
 </body>
 </html>
 
@@ -253,6 +255,8 @@
     }
 
     const sidebar = document.getElementById('sidebar');
+    const wrapper = document.querySelector('.wrapper');
+    const message_form = document.getElementById('message-form')
 
     function toggle_sidebar() {
         sidebar.style.display = 'block';
@@ -261,6 +265,21 @@
     function close_sidebar() {
         sidebar.style.display = "none";
     }
+
+    var observer = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            if (window.getComputedStyle(sidebar).display === "block") {
+                const width = entry.contentRect.width;
+                wrapper.style.marginLeft = width+20 + 'px';
+                message_form.style.left = width+20 + 'px';
+            } else {
+                wrapper.style.marginLeft = '0';
+                message_form.style.left = '0';
+            }
+        }
+    });
+
+    observer.observe(sidebar);
 
     window.onload = async function() {
         var nickname = getCookie('nickname');
