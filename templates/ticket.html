@@ -45,6 +45,7 @@
 
 <script>
     var lastMessageTimestamp = localStorage.getItem('lastMessageTimestamp') || 0; // Get the last timestamp from localStorage
+    const websocket = new WebSocket('ws://' + window.location.host + '/send_message');
 
     async function updateChat(scrollDown = false) {
         var id = document.querySelector('#message-form input[name="id"]').value;

@@ -12,7 +12,10 @@ from app_tg import bot
 
 loop: asyncio.AbstractEventLoop = None
 
+from flask_socketio import SocketIO, emit
+
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 TOKEN = json.loads(open('token.json', encoding='utf-8').read())['token']
 
@@ -116,5 +119,26 @@ async def images(id):
     data = await cursor.fetchone()
     return data[1]
 
+@socketio.on('/send_message')
+async def handle_send_message(data):
+    nickname = data['nickname']
+    message = data['message']
+    id = data['id']
+    db = await get_db()
+    cursor = await db.cursor()
+    await cursor.execute("SELECT * FROM Tickets WHERE id = ?", (id,))
+    ticket_data = await cursor.fetchone()
+    chat_history = json.loads(ticket_data[5])
+
+    text = f'Ответ от: {nickname}\n\n{message}'
+
+    send_message(ticket_data[1], text)
+
+    chat_history.append((message, int(time()), nickname)) 
+    await cursor.execute("UPDATE Tickets SET chat_history = ? WHERE id = ?", (json.dumps(chat_history), id))
+    await db.commit()
+
+    emit('message', data, broadcast=True)
+
 def run():
-    app.run(host="0.0.0.0")
+    socketio.run(app, host="0.0.0.0")
