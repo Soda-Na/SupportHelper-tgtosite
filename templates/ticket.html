@@ -124,10 +124,12 @@
                         chatDiv.appendChild(messageDiv);
                     }
                 });
-
-                if (chat.length > oldChatLength) {
-                    var messageSound = document.getElementById('messageSound');
-                    messageSound.play(); 
+                
+                if (!scrollDown) {
+                    if (chat.length > oldChatLength) {
+                        var messageSound = document.getElementById('messageSound');
+                        messageSound.play(); 
+                    }
                 }
                 
                 if (scrollDown) {
